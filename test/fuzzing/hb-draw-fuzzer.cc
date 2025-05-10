@@ -150,7 +150,7 @@ static void misc_calls_for_gid (hb_face_t *face, hb_font_t *font, hb_set_t *set,
 
 extern "C" int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
-  if (size >= 3) {
+  if (size >= 4) {
     // Generate baseline_tag directly from fuzz data (interpreted as HB_TAG)
     hb_ot_layout_baseline_tag_t tag = static_cast<hb_ot_layout_baseline_tag_t>(
       HB_TAG(data[0], data[1], data[2], data[3]));

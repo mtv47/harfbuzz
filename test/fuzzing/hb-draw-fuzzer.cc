@@ -81,6 +81,36 @@ _close_path (hb_draw_funcs_t *dfuncs HB_UNUSED, void *draw_data_,
 	  draw_data->path_start_y == draw_data->path_last_y);
 }
 
+static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
+                      hb_font_t *font, int* coords, unsigned numCoords) {
+  hb_ot_var_has_data(face);
+
+  unsigned int instance_count = hb_ot_var_get_named_instance_count(face);
+
+  if (instance_count > 0) {
+    unsigned int rand_index = data[0] % instance_count;
+    hb_font_set_var_named_instance(font, rand_index);
+    hb_font_get_var_named_instance(font);
+    hb_font_get_var_coords_normalized(font, &numCoords);
+    if (size > 8)
+    {
+      const unsigned int max_tags = 4;
+      hb_variation_t variations[max_tags];
+      unsigned int var_count = size / 8;
+      if (var_count > max_tags) var_count = max_tags;
+
+      for (unsigned int i = 0; i < var_count; i++) {
+        variations[i].tag = HB_TAG(data[i * 4 + 0], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]);
+        variations[i].value = ((int8_t)data[i * 8 + 4]) / 64.0f;
+        hb_font_set_variation(font, variations[i].tag, variations[i].value);
+      }
+      hb_font_set_variations(font, variations, var_count);
+      hb_ot_var_normalize_variations(face, variations,
+        var_count, coords, numCoords);
+    }
+  }
+}
+
 /* Similar to test-ot-face.c's #test_font() */
 static void misc_calls_for_gid (hb_face_t *face, hb_font_t *font, hb_set_t *set, hb_codepoint_t cp)
 {
@@ -134,6 +164,7 @@ extern "C" int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     for (unsigned i = 0; i < num_coords; ++i)
       coords[i] = ((int) data[size - num_coords + i - 1] - 128) * 10;
   hb_font_set_var_coords_normalized (font, coords, num_coords);
+  var_calls(data, size, face, font, coords, num_coords);
   free (coords);
 
   unsigned glyph_count = hb_face_get_glyph_count (face);

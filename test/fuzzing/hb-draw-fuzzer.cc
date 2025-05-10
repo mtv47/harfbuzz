@@ -91,7 +91,7 @@ static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
     unsigned int rand_index = data[0] % instance_count;
     hb_font_set_var_named_instance(font, rand_index);
     hb_font_get_var_named_instance(font);
-    hb_font_get_var_coords_normalized(font, &numCoords);
+    //hb_font_get_var_coords_normalized(font, &numCoords);
     if (size > 8)
     {
       const unsigned int max_tags = 4;

@@ -56,6 +56,9 @@ static void fuzz_tags_to_script_and_language(const uint8_t *data, size_t size) {
   hb_tag_t script_tag = HB_TAG(data[0], data[1], data[2], data[3]);
   hb_tag_t lang_tag = HB_TAG(data[4], data[5], data[6], data[7]);
 
+  if (script_tag == HB_TAG_NONE || lang_tag == HB_TAG_NONE)
+    return;
+
   hb_script_t script;
   hb_language_t lang;
   hb_ot_tags_to_script_and_language(script_tag, lang_tag, &script, &lang);

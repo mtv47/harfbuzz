@@ -83,7 +83,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   fuzz_script_to_tag(data, size);
   fuzz_tag_language_conversion(data, size);
   fuzz_script_and_language_to_tags(data, size);
-  //fuzz_tags_to_script_and_language(data, size);
+  fuzz_tags_to_script_and_language(data, size);
   fuzz_tag_direction_and_defaults(data, size);
   return 0;
 }

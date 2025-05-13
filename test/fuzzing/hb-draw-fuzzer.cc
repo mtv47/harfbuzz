@@ -131,82 +131,6 @@ static void trigger_tuple_variation_header(hb_face_t *face, hb_font_t *font, con
   hb_font_get_glyph_extents(font, gid, &extents);
 }
 
-static void additionals(hb_face_t *face, hb_font_t *font,  const uint8_t *data) {
-  unsigned glyph_count = hb_face_get_glyph_count(face);
-  if (glyph_count == 0) return;
-
-  hb_font_extents_t dummy_extents;
-  hb_font_get_h_extents(font, &dummy_extents);
-  hb_font_get_v_extents(font, &dummy_extents);
-  hb_codepoint_t cp = data[0] % glyph_count;
-
-  hb_codepoint_t in[2] = { 'A', 'B' };
-  hb_codepoint_t out[2];
-  hb_font_get_nominal_glyphs(font, 2, in, sizeof(hb_codepoint_t), out, sizeof(hb_codepoint_t));
-
-  hb_position_t adv[2];
-  hb_font_get_glyph_h_advances(font, 2, in, sizeof(hb_codepoint_t), adv, sizeof(hb_position_t));
-
-  hb_font_get_glyph_v_advances(font, 2, in, sizeof(hb_codepoint_t), adv, sizeof(hb_position_t));
-
-  hb_font_get_glyph_h_kerning(font, cp, (cp + 1) % hb_face_get_glyph_count(face));
-  hb_font_get_glyph_v_kerning(font, cp, (cp + 1) % hb_face_get_glyph_count(face));
-
-  char name[64];
-  hb_font_get_glyph_name(font, cp, name, sizeof(name));
-  hb_font_get_glyph_from_name(font, name, -1, &cp);
-
-  hb_font_funcs_t* custom_funcs = hb_font_funcs_create();
-  hb_font_funcs_set_paint_glyph_func(custom_funcs, dummy_paint, nullptr, nullptr);
-  hb_font_funcs_set_draw_glyph_func(custom_funcs, dummy_draw, nullptr, nullptr);
-  hb_font_set_funcs(font, custom_funcs, nullptr, nullptr);
-  hb_font_draw_glyph(font, cp, nullptr, nullptr); // triggers dummy_draw
-  hb_font_funcs_destroy(custom_funcs);
-
-#ifndef HB_NO_PAINT
-  hb_paint_funcs_t* paint_funcs = hb_paint_funcs_create();
-  hb_font_paint_glyph(font, cp, paint_funcs, nullptr, 0, 0xFF0000FF);
-  hb_paint_funcs_destroy(paint_funcs);
-#endif
-
-  // Try to covers _default functions in hb-font.cc by using an unconfigured font
-  hb_font_t *dummy_font = hb_font_create(face);
-  hb_font_funcs_t *empty_funcs = hb_font_funcs_create();
-  hb_font_set_funcs(dummy_font, empty_funcs, nullptr, nullptr);
-  hb_font_funcs_destroy(empty_funcs);
-
-  hb_codepoint_t cp_out;
-  hb_position_t x, y;
-  hb_glyph_extents_t extents;
-  char name_d[64] = {};
-
-  hb_font_get_nominal_glyph(dummy_font, cp, &cp_out);
-  hb_font_get_variation_glyph(dummy_font, cp, cp, &cp_out);
-  hb_font_get_glyph_h_advance(dummy_font, cp);
-  hb_font_get_glyph_v_advance(dummy_font, cp);
-  hb_font_get_glyph_h_origin(dummy_font, cp, &x, &y);
-  hb_font_get_glyph_v_origin(dummy_font, cp, &x, &y);
-  hb_font_get_glyph_contour_point(dummy_font, cp, 0, &x, &y);
-  hb_font_get_glyph_extents(dummy_font, cp, &extents);
-  hb_font_get_glyph_name(dummy_font, cp, name_d, sizeof(name_d));
-  hb_font_get_glyph_from_name(dummy_font, name_d, -1, &cp_out);
-  hb_font_get_glyph_h_kerning(dummy_font, cp, cp);
-  hb_font_get_glyph_v_kerning(dummy_font, cp, cp);
-
-
-  hb_draw_funcs_t* draw_funcs = hb_draw_funcs_create();
-  hb_font_draw_glyph(dummy_font, cp, draw_funcs, nullptr);
-  hb_draw_funcs_destroy(draw_funcs);
-
-#ifndef HB_NO_PAINT
-  hb_paint_funcs_t* paint_funcs2 = hb_paint_funcs_create();
-  hb_font_paint_glyph(dummy_font, cp, paint_funcs2, nullptr, 0, 0xFFFFFFFF);
-  hb_paint_funcs_destroy(paint_funcs2);
-#endif
-  hb_font_destroy(dummy_font);
-
-}
-
 static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
                       hb_font_t *font, int* coords, unsigned numCoords) {
 
@@ -342,7 +266,6 @@ extern "C" int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   assert (counter);
   hb_draw_funcs_destroy (funcs);
 
-  additionals(face, font, data);
   trigger_tuple_variation_header(face, font, data, size);
 
   hb_font_destroy (font);

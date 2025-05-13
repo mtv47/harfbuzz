@@ -59,9 +59,12 @@ static void fuzz_tags_to_script_and_language(const uint8_t *data, size_t size) {
   if (script_tag == HB_TAG_NONE || lang_tag == HB_TAG_NONE)
     return;
 
-  hb_script_t script;
-  hb_language_t lang;
-  hb_ot_tags_to_script_and_language(script_tag, lang_tag, &script, &lang);
+  if (lang_tag == 0 || (lang_tag & 0xFFFFFF00) == 0)
+    return;
+
+  hb_script_t script[1];
+  hb_language_t lang[1];
+  hb_ot_tags_to_script_and_language(script_tag, lang_tag, script, lang);
 }
 
 static void fuzz_tag_direction_and_defaults(const uint8_t *data, size_t size) {

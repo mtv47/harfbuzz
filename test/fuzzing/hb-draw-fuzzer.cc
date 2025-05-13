@@ -237,6 +237,22 @@ static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
     }
   }
 
+#ifdef HB_ENABLE_DEPRECATED
+  {
+    unsigned int axis_count = 0;
+    hb_ot_var_get_axes(face, 0, &axis_count, nullptr); // query count
+    if (axis_count > 0 && axis_count <= 8) {
+      hb_ot_var_axis_t axes[8];
+      hb_ot_var_get_axes(face, 0, &axis_count, axes);
+    }
+  }
+  {
+    hb_ot_var_axis_t info;
+    unsigned axis_index;
+    // Use 'wght' as a common tag — data-driven would require bounds checks
+    hb_ot_var_find_axis(face, HB_TAG('w','g','h','t'), &axis_index, &info);
+  }
+#endif
 }
 
 /* Similar to test-ot-face.c's #test_font() */

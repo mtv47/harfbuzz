@@ -81,14 +81,6 @@ _close_path (hb_draw_funcs_t *dfuncs HB_UNUSED, void *draw_data_,
 	  draw_data->path_start_y == draw_data->path_last_y);
 }
 
-static hb_bool_t dummy_paint(hb_font_t*, void*, hb_codepoint_t, hb_paint_funcs_t*, void*, unsigned, hb_color_t, void*) {
-  return true;
-}
-
-static void dummy_draw(hb_font_t*, void*, hb_codepoint_t, hb_draw_funcs_t*, void*, void*) {
-  // Intentionally empty; only to trigger the function pointer path
-}
-
 static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
                       hb_font_t *font, int* coords, unsigned numCoords) {
 

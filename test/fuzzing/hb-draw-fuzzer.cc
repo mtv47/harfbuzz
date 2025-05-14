@@ -89,48 +89,6 @@ static void dummy_draw(hb_font_t*, void*, hb_codepoint_t, hb_draw_funcs_t*, void
   // Intentionally empty; only to trigger the function pointer path
 }
 
-// Try to cover TupleVariationHeader from hb-ot-var-common.hh
-static void trigger_tuple_variation_header(hb_face_t *face, hb_font_t *font, const uint8_t *data, size_t size) {
-  // Safety: needs at least one glyph
-  if (size == 0) return;
-  unsigned int glyph_count = hb_face_get_glyph_count(face);
-  if (!glyph_count) return;
-
-  hb_codepoint_t gid = data[0] % glyph_count;
-
-  // Check for presence of gvar or cff2 tables
-  bool has_gvar = false, has_cff2 = false;
-  {
-    hb_blob_t *blob = hb_face_reference_table(face, HB_TAG('g','v','a','r'));
-    has_gvar = hb_blob_get_length(blob) > 0;
-    hb_blob_destroy(blob);
-  }
-  {
-    hb_blob_t *blob = hb_face_reference_table(face, HB_TAG('C','F','F','2'));
-    has_cff2 = hb_blob_get_length(blob) > 0;
-    hb_blob_destroy(blob);
-  }
-
-  if (!has_gvar && !has_cff2)
-    return;
-
-  // Set up draw funcs once
-  hb_draw_funcs_t* draw_funcs = hb_draw_funcs_create();
-  hb_draw_funcs_set_move_to_func(draw_funcs, _move_to, nullptr, nullptr);
-  hb_draw_funcs_set_line_to_func(draw_funcs, _line_to, nullptr, nullptr);
-  hb_draw_funcs_set_quadratic_to_func(draw_funcs, _quadratic_to, nullptr, nullptr);
-  hb_draw_funcs_set_cubic_to_func(draw_funcs, _cubic_to, nullptr, nullptr);
-  hb_draw_funcs_set_close_path_func(draw_funcs, _close_path, nullptr, nullptr);
-
-  _draw_data_t draw_data = {0, 0, 0, 0, 0};
-  hb_font_draw_glyph(font, gid, draw_funcs, &draw_data);
-  hb_draw_funcs_destroy(draw_funcs);
-
-  // Additional: call get_glyph_extents as another way to force gvar/cvar resolution
-  hb_glyph_extents_t extents;
-  hb_font_get_glyph_extents(font, gid, &extents);
-}
-
 static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
                       hb_font_t *font, int* coords, unsigned numCoords) {
 
@@ -177,6 +135,28 @@ static void var_calls(const uint8_t *data, size_t size, hb_face_t *face,
     hb_ot_var_find_axis(face, HB_TAG('w','g','h','t'), &axis_index, &info);
   }
 #endif
+}
+
+static void add_var_calls(const uint8_t *data, size_t size, hb_face_t *face) {
+  unsigned int axis_count = 4;
+  hb_ot_var_axis_info_t axis_infos[4];
+  hb_ot_var_get_axis_infos(face, 0, &axis_count, axis_infos); // tested in test_face.cc
+
+  unsigned int instance_count = hb_ot_var_get_named_instance_count(face);
+  if (instance_count > 0 && size > 1)
+  {
+    unsigned index = data[1] % instance_count;
+    hb_ot_var_named_instance_get_subfamily_name_id(face, index);
+    hb_ot_var_named_instance_get_postscript_name_id(face, index);
+  }
+
+  unsigned int count = 4;
+  hb_ot_var_axis_t axes[4];
+  hb_ot_var_get_axes(face, 0, &count, axes);
+
+  hb_ot_var_axis_t axis_info;
+  unsigned axis_index;
+  hb_ot_var_find_axis(face, HB_TAG('w','g','h','t'), &axis_index, &axis_info);
 }
 
 /* Similar to test-ot-face.c's #test_font() */
@@ -266,7 +246,7 @@ extern "C" int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   assert (counter);
   hb_draw_funcs_destroy (funcs);
 
-  trigger_tuple_variation_header(face, font, data, size);
+  add_var_calls(data, size, face);
 
   hb_font_destroy (font);
   hb_face_destroy (face);
